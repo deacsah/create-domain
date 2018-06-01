@@ -71,7 +71,7 @@ else
 	echo "[NOTICE] User $USER does not exist - Creating user"
 	echo "[INPUT] Please enter the user $USER's password: "
 	read -s USERPASS
-	adduser $USER --gecos "First Last,RoomNumber,WorkPhone,HomePhone" --disabled-password
+	adduser $USER --gecos "$USER" --disabled-password
 	echo "$USER:$USERPASS" | chpasswd
 	echo "[NOTICE] User $USER added!"
 fi

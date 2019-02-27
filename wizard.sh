@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Make sure only root can run our script
+if [[ $EUID -ne 0 ]]; then
+   echo "[ERROR] This script must be run as root" 1>&2
+   exit 1
+fi
+
 echo "[START] Welcome to the vhost creation wizard!"
 
 # Get the user input for the domain
@@ -66,35 +72,35 @@ echo "[INFO] Creating domain: $DOMAIN.$EXT"
 
 # Creating user if does not exist
 if id "$USER" >/dev/null 2>&1; then
-	echo "[NOTICE] User $USER already exists - skipping user creation"
+	echo "[INFO] User $USER already exists - skipping user creation"
 else
-	echo "[NOTICE] User $USER does not exist - Creating user"
+	echo "[INFO] User $USER does not exist - Creating user"
 	echo "[INPUT] Please enter the user $USER's password: "
 	read -s USERPASS
-	adduser $USER --gecos "$USER" --disabled-password
+	adduser $USER --disabled-password --gecos ""
+	usermod -a -G www-data $USER
 	echo "$USER:$USERPASS" | chpasswd
-	echo "[NOTICE] User $USER added!"
+	echo "[INFO] User $USER added!"
 fi
 
 # Creating dirs with permissions:
-echo "[NOTICE] Creating dirs with permissions"
+echo "[INFO] Creating dirs with permissions"
 mkdir /var/www/$DOMAIN.$EXT && mkdir /var/www/$DOMAIN.$EXT/public_html
-chown $USER:$USER -R /var/www/$DOMAIN.$EXT
-chmod 777 -R /var/www/$DOMAIN.$EXT
+chown $USER:www-data -R /var/www/$DOMAIN.$EXT
+chmod 755 -R /var/www/$DOMAIN.$EXT
 
 # Creating new apache conf files:
-echo "[NOTICE] Copying apache conf files and replacing domain info"
+echo "[INFO] Copying apache conf files and replacing domain info"
 cp /etc/apache2/sites-available/domain.ext.conf /etc/apache2/sites-available/$DOMAIN.$EXT.conf
-sed -i "s/opperbazen\.nl/$DOMAIN\.$EXT/g" /etc/apache2/sites-available/$DOMAIN.$EXT.conf
-ln -s /etc/apache2/sites-available/$DOMAIN.$EXT.conf /etc/apache2/sites-enabled/$DOMAIN.$EXT.conf
+sed -i "s/domain\.ext/$DOMAIN\.$EXT/g" /etc/apache2/sites-available/$DOMAIN.$EXT.conf
 
 # Enable site
-echo "[NOTICE] Enabling site with a2ensite"
+echo "[INFO] Enabling site with a2ensite"
 a2ensite $DOMAIN.$EXT.conf
 
 # Reload apache2 for changes to take effect
-echo "[NOTICE] Reloading apache"
+echo "[INFO] Reloading apache"
 service apache2 reload
 
-echo "[END] Yay!!1 Script Complete: Domain $DOMAIN.$EXT has been created and enabled. User $USER has been created."
+echo "[END] Script Complete!!1 Domain $DOMAIN.$EXT has been created and enabled. User $USER has been created and added to the www-data group."
 exit 1
